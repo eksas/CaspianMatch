@@ -268,11 +268,12 @@ export function Browse() {
               <span className="text-[11px] font-mono flex items-center gap-3" style={{ color: C.tide500, letterSpacing: "0.14em", fontWeight: 600 }}>
                 <span>{list.length} РЕЗ.</span>
                 {hasFilter && (
-                <button onClick={() => { setCat("all"); setDist(null); setQ(""); }} className="hover:underline" style={{ color: C.coral, fontWeight: 800 }}>
-                  СБРОСИТЬ
-                </button>
-              )}
-            </span>
+                  <button onClick={() => { setCat("all"); setDist(null); setQ(""); }} className="hover:underline" style={{ color: C.coral, fontWeight: 800 }}>
+                    СБРОСИТЬ
+                  </button>
+                )}
+              </span>
+            </div>
           </div>
 
           {list.length === 0 ? (
