@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
+  --font-display: 'Montserrat', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Montserrat', ui-monospace, SFMono-Regular, monospace;
+}
+
+html, body, button, input, textarea, select, kbd {
+  font-family: var(--font-sans);
+}
+
+.font-display { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.03em; }
+.font-mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
