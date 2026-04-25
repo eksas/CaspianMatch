@@ -113,7 +113,7 @@ api.post("/match-jobs", (_req, res) => {
 });
 
 // ── Gemini AI endpoints ────────────────────────────────────────────────────────
-const genAI = new GoogleGenerativeAI("AIzaSyCZvTQfWmtdrHw3hpzPRBbBeOsSYQJiUBo");
+const genAI = new GoogleGenerativeAI("AIzaSyBtqWYxvemb-XBGC4xecIpNgP038nv6fo0");
 const geminiModel = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
 
 api.post("/pearl/message", async (req, res) => {
