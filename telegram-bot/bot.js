@@ -18,6 +18,14 @@ const API_PORT = 3000;
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
+// Prevent crash on Telegram polling errors (stale queries, etc.)
+bot.on("polling_error", (err) => {
+  console.error("Telegram polling error (non-fatal):", err?.message || err);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception (non-fatal):", err?.message || err);
+});
+
 // ── Shared data store (in-memory) ────────────────────────────────────────────
 let JOBS = [
   { id: "j1", title: "Бариста", company: "Coffee Point", salary: "180 000 ₸", microdistrict: 14, category: "waiter", isAIParsed: true, description: "Утренние смены на набережной. Приветствуем латте-арт.", requirements: ["Смена 2/2", "Базовый английский"], match: 94 },
@@ -123,7 +131,7 @@ api.post("/match-jobs", async (req, res) => {
 });
 
 // ── Gemini AI endpoints ────────────────────────────────────────────────────────
-const genAI = new GoogleGenerativeAI("AIzaSyBtqWYxvemb-XBGC4xecIpNgP038nv6fo0");
+const genAI = new GoogleGenerativeAI("AIzaSyBdqksdLSHllfWo0yWo5xzflUWWGgMlIjo");
 const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 api.post("/pearl/message", async (req, res) => {
@@ -218,13 +226,89 @@ api.post("/shadow-interview/start", async (req, res) => {
   try {
     const { jobId } = req.body;
     const job = JOBS.find(j => j.id === jobId) || JOBS[0];
-    const system = `Ты — AI-рекрутер Caspian. Работодатель просит задать 3 коротких вопроса кандидату перед откликом.
-Вопросы — на русском, практичные, проверяют надёжность. Верни JSON: {"questions": string[]}`;
+    const system = `Ты — AI-рекрутер Caspian. Работодатель просит задать 5 вопросов кандидату для голосового интервью.
+Вопросы — на русском, практичные, проверяют soft-skills и надёжность. Категории: motivation, situational, personality, skills, culture.
+Верни JSON: {"questions": [{"id": number, "text": string, "category": string}]}`;
     const result = await geminiModel.generateContent(system + "\n\nJob: " + JSON.stringify(job));
-    res.json({ questions: JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim()).questions });
+    const parsed = JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim());
+    res.json({ questions: parsed.questions || [] });
   } catch (error) {
     console.error("Shadow Interview Error:", error);
-    res.json({ questions: ["Расскажите о своем опыте?", "Почему вы хотите у нас работать?"] });
+    res.json({ questions: [
+      { id: 1, text: "Расскажите о себе и почему ищете работу?", category: "motivation" },
+      { id: 2, text: "Опишите сложную ситуацию и как вы её решили?", category: "situational" },
+      { id: 3, text: "Какие ваши главные качества?", category: "personality" },
+    ]});
+  }
+});
+
+// AI Interview: analyze a single answer
+api.post("/interview/analyze-answer", async (req, res) => {
+  try {
+    const { audioBase64, questionText, questionCategory } = req.body;
+    const system = `Ты — AI-рекрутер, анализирующий ответ кандидата на вопрос собеседования.
+Вопрос: "${questionText}" (категория: ${questionCategory})
+
+Проанализируй аудио-ответ и верни JSON:
+{
+  "analysis": {
+    "transcription": "текст ответа",
+    "sentiment": "positive"|"neutral"|"negative",
+    "confidence": число 0-100,
+    "keyTraits": ["черта1", "черта2", "черта3"],
+    "detailLevel": "brief"|"moderate"|"detailed"
+  }
+}`;
+
+    const parts = [system];
+    if (audioBase64) {
+      parts.push({
+        inlineData: {
+          data: audioBase64.includes(",") ? audioBase64.split(",")[1] : audioBase64,
+          mimeType: "audio/webm",
+        }
+      });
+    }
+    
+    const result = await geminiModel.generateContent(parts);
+    const parsed = JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim());
+    res.json(parsed);
+  } catch (error) {
+    console.error("Interview Analyze Error:", error);
+    res.status(500).json({ error: "Failed to analyze answer" });
+  }
+});
+
+// AI Interview: generate personality profile from all answers
+api.post("/interview/generate-profile", async (req, res) => {
+  try {
+    const { answers } = req.body;
+    const system = `Ты — AI-рекрутер CaspianMatch. На основе ответов кандидата на собеседовании составь профиль.
+
+Ответы кандидата:
+${answers.map((a, i) => `${i+1}. Вопрос (${a.category}): ${a.question}\n   Ответ: ${a.transcription}\n   Черты: ${a.analysis?.keyTraits?.join(", ")}`).join("\n\n")}
+
+Верни JSON:
+{
+  "profile": {
+    "summary": "краткое резюме кандидата",
+    "characteristics": [
+      {"trait": "название черты", "score": число 0-100, "description": "пояснение", "icon": "emoji"}
+    ],
+    "strengths": ["сила1", "сила2"],
+    "areasToImprove": ["область1", "область2"],
+    "communicationStyle": "описание стиля общения",
+    "fitScore": число 0-100,
+    "recommendation": "рекомендация для работодателя"
+  }
+}`;
+
+    const result = await geminiModel.generateContent(system);
+    const parsed = JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim());
+    res.json(parsed);
+  } catch (error) {
+    console.error("Interview Profile Error:", error);
+    res.status(500).json({ error: "Failed to generate profile" });
   }
 });
 

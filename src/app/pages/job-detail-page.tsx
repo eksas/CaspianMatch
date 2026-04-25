@@ -223,13 +223,18 @@ export function JobDetailPage() {
         onClose={() => setInterviewOpen(false)}
         onFinished={(s, qa) => {
           setInterviewOpen(false);
-          const block = [
-            note.trim(),
-            `— AI-интервью (fit ${s.fit}%) —`,
-            s.summary,
-            ...qa.map((x) => `Q: ${x.q}\nA: ${x.a}`),
-          ].filter(Boolean).join("\n\n");
-          doSubmit(block);
+          const sections: string[] = [];
+          if (note.trim()) sections.push(note.trim());
+          sections.push(`[INTERVIEW_HEADER]AI-интервью · Совместимость: ${s.fit}%`);
+          sections.push(`[SUMMARY]${s.summary}`);
+          if (s.flags && s.flags.length > 0) {
+            sections.push(`[FLAGS]${s.flags.join("; ")}`);
+          }
+          qa.forEach((x, i) => {
+            sections.push(`[Q${i + 1}]${x.q}`);
+            sections.push(`[A${i + 1}]${x.a}`);
+          });
+          doSubmit(sections.join("\n"));
         }}
       />
       <BoostTipsModal jobId={job.id} open={boostOpen} onClose={() => setBoostOpen(false)} />

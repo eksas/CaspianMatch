@@ -40,9 +40,7 @@ export function AppLayout() {
   const seekerNav: NavItem[] = [
     { to: "/app", end: true, icon: Compass, label: "Живая лента", badge: jobs.length },
     { to: "/app/nearby", icon: Navigation, label: "Рядом со мной" },
-    { to: "/app/interview", icon: MessageSquareText, label: "AI-интервью" },
     { to: "/app/mentor", icon: GraduationCap, label: "AI-наставник" },
-    { to: "/app/simulator", icon: Activity, label: "Стресс-тест" },
     { to: "/app/reputation", icon: Shield, label: "Репутация" },
     { to: "/app/community", icon: Users, label: "Сообщество" },
     { to: "/app/rank", icon: Trophy, label: "Рейтинг" },

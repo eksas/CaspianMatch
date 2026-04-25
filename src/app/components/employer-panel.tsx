@@ -190,7 +190,7 @@ export function EmployerPanel({ onPublish, applications, jobs, onApprove }: Prop
                       </motion.button>
                     )}
                   </div>
-                  {a.note && <div className="mt-2.5 text-[12px] text-slate-600 italic" style={{ fontWeight: 500 }}>"{a.note}"</div>}
+                  {a.note && <InterviewNote note={a.note} />}
                 </motion.div>
               );
             })}
@@ -216,6 +216,89 @@ function Input({ label, value, onChange, placeholder }: { label: string; value: 
         className="w-full rounded-full border border-slate-200 bg-white px-4 h-11 text-[13px] outline-none focus:border-[#1B5A8F] focus:ring-4 focus:ring-[#1B5A8F]/10 transition-all"
         style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 500 }}
       />
+    </div>
+  );
+}
+
+function InterviewNote({ note }: { note: string }) {
+  const lines = note.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  const hasMarkers = lines.some(l => /^\[(INTERVIEW_HEADER|SUMMARY|FLAGS|Q\d|A\d)\]/.test(l));
+
+  // Legacy format: no markers, just plain text
+  if (!hasMarkers) {
+    return (
+      <div className="mt-2.5 text-[12px] text-slate-600 italic" style={{ fontWeight: 500 }}>
+        "{note}"
+      </div>
+    );
+  }
+
+  const elements: React.ReactNode[] = [];
+  let personalNote = "";
+
+  lines.forEach((line, i) => {
+    const headerMatch = line.match(/^\[INTERVIEW_HEADER\](.+)/);
+    const summaryMatch = line.match(/^\[SUMMARY\](.+)/);
+    const flagsMatch = line.match(/^\[FLAGS\](.+)/);
+    const qMatch = line.match(/^\[Q(\d+)\](.+)/);
+    const aMatch = line.match(/^\[A(\d+)\](.+)/);
+
+    if (headerMatch) {
+      elements.push(
+        <div key={`h-${i}`} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <div style={{ width: 20, height: 20, borderRadius: 6, background: "#1B5A8F", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Sparkles style={{ width: 10, height: 10, color: "#fff" }} />
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#1B5A8F", letterSpacing: "0.04em" }}>
+            {headerMatch[1]}
+          </span>
+        </div>
+      );
+    } else if (summaryMatch) {
+      elements.push(
+        <div key={`s-${i}`} style={{ fontSize: 12, color: "#334155", fontWeight: 500, lineHeight: 1.6, marginBottom: 10, padding: "8px 10px", borderRadius: 8, background: "#F8FAFC" }}>
+          {summaryMatch[1]}
+        </div>
+      );
+    } else if (flagsMatch) {
+      const flags = flagsMatch[1].split("; ").filter(Boolean);
+      elements.push(
+        <div key={`f-${i}`} style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+          {flags.map((f, fi) => (
+            <span key={fi} style={{ fontSize: 10, fontWeight: 600, color: "#D97706", background: "#FFFBEB", padding: "2px 8px", borderRadius: 20 }}>
+              📈 {f}
+            </span>
+          ))}
+        </div>
+      );
+    } else if (qMatch) {
+      elements.push(
+        <div key={`q-${i}`} style={{ fontSize: 11, fontWeight: 700, color: "#64748B", marginTop: 6, marginBottom: 2 }}>
+          Вопрос {qMatch[1]}:
+          <span style={{ fontWeight: 500, color: "#475569", marginLeft: 4 }}>{qMatch[2]}</span>
+        </div>
+      );
+    } else if (aMatch) {
+      const text = aMatch[2].trim();
+      const isEmpty = text === "Ответ записан (транскрипция недоступна)" || !text;
+      elements.push(
+        <div key={`a-${i}`} style={{ fontSize: 12, color: isEmpty ? "#94A3B8" : "#1E293B", fontWeight: 500, lineHeight: 1.5, marginBottom: 6, paddingLeft: 10, borderLeft: "2px solid #E2E8F0" }}>
+          {isEmpty ? <em>Аудио-ответ (транскрипция недоступна)</em> : text}
+        </div>
+      );
+    } else if (line.trim()) {
+      personalNote += (personalNote ? "\n" : "") + line;
+    }
+  });
+
+  return (
+    <div style={{ marginTop: 10, borderRadius: 12, border: "1px solid #E2E8F0", padding: 12, background: "#FFFFFF" }}>
+      {personalNote && (
+        <div style={{ fontSize: 12, color: "#475569", fontStyle: "italic", fontWeight: 500, marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
+          "{personalNote}"
+        </div>
+      )}
+      {elements}
     </div>
   );
 }

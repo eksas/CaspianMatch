@@ -8,7 +8,6 @@ import { Browse } from "./pages/browse";
 import { JobDetailPage } from "./pages/job-detail-page";
 import { Profile } from "./pages/profile";
 import { Nearby } from "./pages/nearby";
-import { Interviewer } from "./pages/interviewer";
 import { Mentor } from "./pages/mentor";
 import { Reputation } from "./pages/reputation";
 import { Community } from "./pages/community";
@@ -19,7 +18,6 @@ import { EmployerInbox } from "./pages/employer-inbox";
 import { EmployerVacancies } from "./pages/employer-vacancies";
 import { VouchPublic } from "./pages/vouch";
 import { Gamification } from "./pages/gamification";
-import { StressSimulator } from "./pages/stress-simulator";
 import { NotFound } from "./pages/not-found";
 import { RequireAuth } from "./lib/auth";
 
@@ -45,11 +43,9 @@ export const router = createBrowserRouter([
       { path: "browse", Component: Browse },
       { path: "jobs/:id", Component: JobDetailPage },
       { path: "nearby", Component: Nearby },
-      { path: "interview", Component: Interviewer },
       { path: "mentor", Component: Mentor },
       { path: "reputation", Component: Reputation },
       { path: "community", Component: Community },
-      { path: "simulator", Component: StressSimulator },
       { path: "u/:userId", Component: PublicProfile },
       { path: "rank", Component: Gamification },
       { path: "profile", Component: Profile },
