@@ -114,7 +114,7 @@ api.post("/match-jobs", (_req, res) => {
 
 // ── Gemini AI endpoints ────────────────────────────────────────────────────────
 const genAI = new GoogleGenerativeAI("AIzaSyBtqWYxvemb-XBGC4xecIpNgP038nv6fo0");
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 api.post("/pearl/message", async (req, res) => {
   try {

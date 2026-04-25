@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from "../../../utils/supabase/info";
 
-export const API_BASE = `https://caspianmatch-api-v2.loca.lt`;
+export const API_BASE = `http://localhost:3000`;
 
 const TOKEN_KEY = "caspian.token";
 
