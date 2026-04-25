@@ -19,7 +19,10 @@ const API_PORT = 3000;
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // ── Shared data store (in-memory) ────────────────────────────────────────────
-let JOBS = [];
+let JOBS = [
+  { id: "j1", title: "Бариста", company: "Coffee Point", salary: "180 000 ₸", microdistrict: 14, category: "waiter", isAIParsed: true, description: "Утренние смены на набережной. Приветствуем латте-арт.", requirements: ["Смена 2/2", "Базовый английский"], match: 94 },
+  { id: "j2", title: "Доставщик", company: "DIDI Food", salary: "150 000 ₸", microdistrict: 22, category: "courier", isAIParsed: false, description: "Своя машина или скутер. Гибкий график, еженедельные выплаты.", requirements: ["Свой транспорт"], match: 82 },
+];
 let APPLICATIONS = [];
 
 // ── Express API server (shared between bot + web app) ────────────────────────
@@ -103,13 +106,20 @@ api.post("/saved/toggle", (req, res) => {
 });
 
 // Match jobs
-api.post("/match-jobs", (_req, res) => {
-  const scores = JOBS.map((j) => ({
-    id: j.id,
-    score: j.match,
-    reason: "Район совпадает, и нужный навык у тебя уже есть.",
-  }));
-  res.json({ scores });
+api.post("/match-jobs", async (req, res) => {
+  try {
+    const { jobs, seeker } = req.body;
+    const system = `Ты — AI-матчер вакансий Caspian. На основе анкеты соискателя оцени каждую вакансию от 0 до 100.
+Учитывай: совпадение навыков, близость района (±3 МКР — сильный плюс), интересы.
+Верни JSON без прозы: {"scores":[{"id":string,"score":number,"reason":string(<=60 симв. по-русски)}]}`;
+    const prompt = `Соискатель: ${JSON.stringify(seeker)}\nВакансии: ${JSON.stringify(jobs.slice(0, 10))}`;
+    const result = await geminiModel.generateContent(system + "\n\n" + prompt);
+    const parsed = JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim());
+    res.json({ scores: parsed.scores || [] });
+  } catch (error) {
+    console.error("Match Jobs Error:", error);
+    res.json({ scores: [] });
+  }
 });
 
 // ── Gemini AI endpoints ────────────────────────────────────────────────────────
@@ -174,6 +184,47 @@ api.post("/parse-voice", async (req, res) => {
   } catch (error) {
     console.error("Parse Voice Error:", error);
     res.status(500).json({ error: "Failed to parse voice audio." });
+  }
+});
+
+api.post("/parse-query", async (req, res) => {
+  try {
+    const { query } = req.body;
+    const system = `Extract structured intent from a job search query in Russian, Kazakh, or English.
+Return JSON only, no prose. Null unknown fields.
+Shape: {"role": string|null, "microdistricts": number[], "minSalary": number|null, "depth": "SURFACE"|"SHALLOW"|"MID"|"DEEP"|null, "schedule": string|null, "language": "RU"|"KZ"|"EN"}`;
+    const result = await geminiModel.generateContent(system + "\n\nQuery: " + query);
+    res.json({ intent: JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim()) });
+  } catch (error) {
+    console.error("Parse Query Error:", error);
+    res.status(500).json({ error: "Failed to parse query." });
+  }
+});
+
+api.post("/vacancies/parse-whatsapp", async (req, res) => {
+  try {
+    const { rawText } = req.body;
+    const system = `You extract a structured job posting from an informal Kazakh/Russian chat message.
+Return JSON. Use null for missing fields. Shape: {"title": string, "description": string, "salaryMin": number|null, "salaryMax": number|null, "salaryCurrency": "KZT", "microdistrict": number|null, "category": "food"|"retail"|"construction"|"logistics"|"childcare"|"beauty"|"other", "depth": "SURFACE"|"SHALLOW"|"MID"|"DEEP", "requiredSkills": string[], "phone": string|null, "confidence": number, "sourceSnippet": string}`;
+    const result = await geminiModel.generateContent(system + "\n\nInput:\n" + rawText);
+    res.json({ parsed: JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim()) });
+  } catch (error) {
+    console.error("Parse WhatsApp Error:", error);
+    res.status(500).json({ error: "Failed to parse advertisement." });
+  }
+});
+
+api.post("/shadow-interview/start", async (req, res) => {
+  try {
+    const { jobId } = req.body;
+    const job = JOBS.find(j => j.id === jobId) || JOBS[0];
+    const system = `Ты — AI-рекрутер Caspian. Работодатель просит задать 3 коротких вопроса кандидату перед откликом.
+Вопросы — на русском, практичные, проверяют надёжность. Верни JSON: {"questions": string[]}`;
+    const result = await geminiModel.generateContent(system + "\n\nJob: " + JSON.stringify(job));
+    res.json({ questions: JSON.parse(result.response.text().replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim()).questions });
+  } catch (error) {
+    console.error("Shadow Interview Error:", error);
+    res.json({ questions: ["Расскажите о своем опыте?", "Почему вы хотите у нас работать?"] });
   }
 });
 
