@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from "../../../utils/supabase/info";
 
-export const API_BASE = `http://localhost:3000`;
+export const API_BASE = `https://caspianmatch-api.loca.lt`;
 
 const TOKEN_KEY = "caspian.token";
 
@@ -8,12 +8,9 @@ export function getToken(): string | null {
   try {
     const t = localStorage.getItem(TOKEN_KEY);
     if (!t) return null;
-    // Reject any stored Supabase / OIDC JWTs (they always start with "eyJ").
-    // Our custom session tokens are 64-char hex strings — never "eyJ…".
-    // Keeping a JWT would make every protected API call 401 in a loop.
     if (t.startsWith("eyJ")) {
       localStorage.removeItem(TOKEN_KEY);
-      console.warn("[auth] Cleared stale Supabase JWT from localStorage — please sign in again.");
+      console.warn("[auth] Cleared stale Supabase JWT from localStorage");
       return null;
     }
     return t;
@@ -26,7 +23,6 @@ export function setToken(token: string | null) {
   } catch {}
 }
 
-/** Thrown by apiFetch when the server returns a non-2xx response. */
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -44,7 +40,7 @@ export async function clientLog(
   try {
     await fetch(`${API_BASE}/logs`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}`, "Bypass-Tunnel-Reminder": "true" },
       body: JSON.stringify({ level, scope, message, meta }),
     });
   } catch {}
@@ -61,6 +57,7 @@ export async function apiFetch<T = any>(path: string, opts: RequestInit = {}): P
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "Bypass-Tunnel-Reminder": "true",
         ...(opts.headers ?? {}),
       },
     });
