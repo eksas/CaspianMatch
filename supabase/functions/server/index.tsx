@@ -15,7 +15,7 @@ app.use("/*", cors({
 
 const PREFIX = "/make-server-7196478c";
 const GEMINI_API_KEY = "AIzaSyCZvTQfWmtdrHw3hpzPRBbBeOsSYQJiUBo";
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
 const GEMINI_URL = (key: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
 
