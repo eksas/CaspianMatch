@@ -14,7 +14,8 @@ app.use("/*", cors({
 }));
 
 const PREFIX = "/make-server-7196478c";
-const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
+const GEMINI_API_KEY = "AIzaSyCZvTQfWmtdrHw3hpzPRBbBeOsSYQJiUBo";
+const GEMINI_MODEL = "gemini-1.5-flash";
 const GEMINI_URL = (key: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
 
@@ -394,8 +395,7 @@ app.post(`${PREFIX}/saved/toggle`, async (c) => {
 
 /* PARSE-QUERY — Magic Search intent extraction */
 async function callGemini(prompt: string, systemInstruction: string): Promise<string> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+  const apiKey = GEMINI_API_KEY;
   const res = await fetch(GEMINI_URL(apiKey), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -463,8 +463,7 @@ Shape:
 app.post(`${PREFIX}/pearl/message`, async (c) => {
   try {
     const { messages } = await c.req.json();
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) return c.json({ error: "GEMINI_API_KEY not configured on server" }, 500);
+    const apiKey = GEMINI_API_KEY;
 
     const systemInstruction = `Ты — Жемчуг (Pearl), AI-наставник на платформе Caspian.
 Аудитория: молодёжь Актау 16–25 лет, часто ищут первую работу.
@@ -732,8 +731,7 @@ app.post(`${PREFIX}/parse-voice`, async (c) => {
   try {
     const { audioBase64, mimeType } = await c.req.json();
     if (!audioBase64) return c.json({ error: "audioBase64 required" }, 400);
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) return c.json({ error: "GEMINI_API_KEY not configured" }, 500);
+    const apiKey = GEMINI_API_KEY;
 
     const system = `Ты извлекаешь анкету из голосового сообщения на русском или казахском.
 Верни JSON без прозы. Неизвестные поля — null или пустой массив.
